@@ -16,7 +16,7 @@ public interface OtpRepository extends JpaRepository<OtpRecord, Long> {
     Optional<OtpRecord> findLatestByEmail(@Param("email") String email);
 
     // Count total OTP requests for this email today
-    @Query("SELECT COUNT(o) FROM OtpRecord o WHERE o.email = :email AND DATE(o.createdAt) = CURRENT_DATE")
+    @Query("SELECT COUNT(o) FROM OtpRecord o WHERE o.email = :email AND o.createdAt >= CURRENT_DATE")
     long countTodayRequestsByEmail(@Param("email") String email);
 
     // Delete all OTP records for an email (after successful registration)
