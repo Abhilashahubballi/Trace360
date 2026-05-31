@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Trace360 — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Cabinet+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#03060f; --s1:rgba(10,18,35,0.92); --s2:rgba(15,25,50,0.7);
+  --border:rgba(255,255,255,0.07); --border-lit:rgba(0,200,255,0.25);
+  --cyan:#00c8ff; --blue:#1a6eff; --violet:#7c3aff;
+  --green:#00f5a0; --warn:#ffb830; --error:#ff4060;
+  --text:#e2ecff; --muted:#4a6280; --muted2:#1e2d45;
+  --sidebar:220px;
+  --fh:'Clash Display',sans-serif; --fb:'Cabinet Grotesk',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+body{background:var(--bg);font-family:var(--fb);color:var(--text);cursor:none;display:flex;}
+
+/* ── Cursor ── */
+#cur{position:fixed;width:10px;height:10px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:width .15s,height .15s;}
+#cur-ring{position:fixed;width:34px;height:34px;border:1.5px solid rgba(0,200,255,0.3);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all .08s linear;}
+
+/* ── BG ── */
+#starfield{position:fixed;inset:0;z-index:0;}
+.grid-bg{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(0,200,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,200,255,0.02) 1px,transparent 1px);background-size:50px 50px;animation:gridScroll 35s linear infinite;}
+@keyframes gridScroll{to{background-position:50px 50px}}
+.neb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;}
+.neb1{width:600px;height:600px;background:radial-gradient(circle,rgba(26,110,255,0.1) 0%,transparent 70%);top:-150px;right:100px;animation:nf1 20s ease-in-out infinite;}
+.neb2{width:400px;height:400px;background:radial-gradient(circle,rgba(124,58,255,0.08) 0%,transparent 70%);bottom:-100px;left:250px;animation:nf2 25s ease-in-out infinite;}
+@keyframes nf1{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,20px)}}
+@keyframes nf2{0%,100%{transform:translate(0,0)}50%{transform:translate(20px,-30px)}}
+
+/* ══ SIDEBAR ══ */
+.sidebar{
+  width:var(--sidebar);flex-shrink:0;height:100vh;
+  background:rgba(6,10,22,0.95);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:relative;z-index:50;
+  animation:sideIn .6s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes sideIn{from{transform:translateX(-100%)}to{transform:none}}
+.sidebar::before{content:'';position:absolute;top:0;right:0;bottom:0;width:1px;background:linear-gradient(to bottom,transparent,rgba(0,200,255,0.3),transparent);}
+
+.sidebar-logo{
+  padding:24px 20px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:10px;
+}
+.logo-hex{width:34px;height:34px;display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+.logo-hex::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--blue),var(--cyan));clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);animation:hexPulse 3s ease-in-out infinite;}
+@keyframes hexPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.3)}}
+.logo-hex span{position:relative;z-index:1;font-size:15px;}
+.logo-text{font-family:var(--fh);font-size:18px;font-weight:700;}
+.logo-text em{font-style:normal;color:var(--cyan);}
+.logo-badge{font-size:9px;padding:2px 7px;background:rgba(26,110,255,0.2);border:1px solid rgba(26,110,255,0.3);border-radius:20px;color:var(--blue);margin-left:4px;font-weight:600;letter-spacing:.5px;}
+
+.sidebar-nav{flex:1;padding:16px 10px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;}
+.nav-section-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:8px 10px 4px;margin-top:8px;}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:10px;
+  cursor:pointer;transition:all .2s;
+  font-size:13.5px;color:var(--muted);
+  position:relative;
+}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:var(--text);}
+.nav-item.active{background:rgba(0,200,255,0.08);color:var(--cyan);border:1px solid rgba(0,200,255,0.15);}
+.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:2px;background:var(--cyan);border-radius:2px;}
+.nav-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.nav-badge{margin-left:auto;font-size:10px;padding:2px 7px;border-radius:20px;background:rgba(255,64,96,0.2);color:var(--error);font-weight:600;}
+.nav-badge.green{background:rgba(0,245,160,0.15);color:var(--green);}
+
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);}
+.admin-profile{display:flex;align-items:center;gap:10px;}
+.admin-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--violet));display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.admin-info{flex:1;min-width:0;}
+.admin-name{font-size:13px;font-weight:600;truncate;}
+.admin-role{font-size:11px;color:var(--muted);}
+.admin-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;animation:liveRing 2s ease-out infinite;}
+@keyframes liveRing{0%{box-shadow:0 0 0 0 rgba(0,245,160,0.5)}70%{box-shadow:0 0 0 6px rgba(0,245,160,0)}100%{box-shadow:0 0 0 0 rgba(0,245,160,0)}}
+
+/* ══ MAIN ══ */
+.main{flex:1;height:100vh;overflow-y:auto;position:relative;z-index:10;display:flex;flex-direction:column;}
+
+/* ── Topbar ── */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 32px;
+  background:rgba(3,6,15,0.88);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  animation:topIn .5s ease both;
+}
+@keyframes topIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.topbar-left{display:flex;flex-direction:column;gap:2px;}
+.topbar-title{font-family:var(--fh);font-size:20px;font-weight:700;letter-spacing:-.5px;}
+.topbar-sub{font-size:12px;color:var(--muted);}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.topbar-search{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);border-radius:10px;
+  padding:8px 14px;transition:border-color .2s;
+}
+.topbar-search:focus-within{border-color:var(--border-lit);}
+.topbar-search input{background:transparent;border:none;outline:none;color:var(--text);font-family:var(--fb);font-size:13px;width:180px;}
+.topbar-search input::placeholder{color:var(--muted);}
+.topbar-icon-btn{width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,0.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s;color:var(--muted);}
+.topbar-icon-btn:hover{background:rgba(0,200,255,0.1);border-color:var(--border-lit);color:var(--cyan);}
+.notif-btn{position:relative;}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--error);border:1.5px solid var(--bg);}
+
+/* ══ CONTENT ══ */
+.content{padding:28px 32px;flex:1;}
+
+/* ── Panels ── */
+.panel{display:none;animation:panelIn .4s cubic-bezier(0.16,1,0.3,1);}
+.panel.active{display:block;}
+@keyframes panelIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ══ OVERVIEW ══ */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:28px;}
+.stat-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:16px;
+  padding:22px;position:relative;overflow:hidden;
+  animation:cardIn .5s cubic-bezier(0.16,1,0.3,1) both;
+  cursor:default;transition:border-color .25s,transform .25s;
+}
+.stat-card:hover{border-color:var(--border-lit);transform:translateY(-2px);}
+@keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,200,255,0.2),transparent);}
+.stat-icon{font-size:26px;margin-bottom:14px;}
+.stat-val{font-family:var(--fh);font-size:34px;font-weight:700;margin-bottom:4px;line-height:1;}
+.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.stat-change{font-size:12px;display:flex;align-items:center;gap:4px;}
+.stat-change.up{color:var(--green);}
+.stat-change.down{color:var(--error);}
+.stat-glow{position:absolute;bottom:-20px;right:-20px;width:80px;height:80px;border-radius:50%;filter:blur(30px);opacity:.4;}
+
+.overview-bottom{display:grid;grid-template-columns:1fr 340px;gap:20px;}
+
+/* ── Chart card ── */
+.chart-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:24px;position:relative;overflow:hidden;}
+.chart-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,200,255,0.2),transparent);}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;}
+.chart-title{font-family:var(--fh);font-size:15px;font-weight:600;}
+.chart-tabs{display:flex;gap:6px;}
+.chart-tab{font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted);transition:all .2s;font-family:var(--fb);}
+.chart-tab.active{background:rgba(0,200,255,0.1);border-color:rgba(0,200,255,0.25);color:var(--cyan);}
+canvas#deliveryChart{width:100%!important;height:200px!important;}
+
+/* ── Activity feed ── */
+.activity-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:24px;position:relative;overflow:hidden;}
+.activity-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,58,255,0.3),transparent);}
+.activity-title{font-family:var(--fh);font-size:15px;font-weight:600;margin-bottom:18px;}
+.activity-list{display:flex;flex-direction:column;gap:0;max-height:200px;overflow-y:auto;}
+.activity-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.activity-item:last-child{border-bottom:none;}
+.activity-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.activity-text{font-size:12.5px;line-height:1.5;flex:1;}
+.activity-time{font-size:11px;color:var(--muted);white-space:nowrap;margin-left:auto;}
+
+/* ══ PACKAGES TABLE ══ */
+.table-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.table-title{font-family:var(--fh);font-size:18px;font-weight:700;}
+.table-actions{display:flex;gap:10px;align-items:center;}
+.filter-select{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:10px;padding:9px 14px;color:var(--text);font-family:var(--fb);font-size:13px;outline:none;cursor:pointer;appearance:none;}
+.btn-new{padding:10px 20px;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:10px;color:#fff;font-family:var(--fh);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.btn-new:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(26,110,255,0.35);}
+
+.table-wrap{background:var(--s1);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.table-wrap::before{content:'';display:block;height:1px;background:linear-gradient(90deg,transparent,rgba(0,200,255,0.2),transparent);}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:rgba(255,255,255,0.03);}
+th{padding:14px 18px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border);}
+tbody tr{transition:background .15s;cursor:pointer;}
+tbody tr:hover{background:rgba(0,200,255,0.03);}
+td{padding:14px 18px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.03);}
+tbody tr:last-child td{border-bottom:none;}
+.td-id{font-family:monospace;font-size:12px;color:var(--cyan);}
+.td-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.td-badge.transit{background:rgba(0,200,255,0.1);border:1px solid rgba(0,200,255,0.2);color:var(--cyan);}
+.td-badge.delivered{background:rgba(0,245,160,0.1);border:1px solid rgba(0,245,160,0.2);color:var(--green);}
+.td-badge.pending{background:rgba(255,184,48,0.1);border:1px solid rgba(255,184,48,0.2);color:var(--warn);}
+.td-badge.failed{background:rgba(255,64,96,0.1);border:1px solid rgba(255,64,96,0.2);color:var(--error);}
+.td-badge .td-dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+.td-actions{display:flex;gap:6px;}
+.td-btn{padding:5px 10px;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:var(--fb);}
+.td-btn.view{background:rgba(0,200,255,0.1);color:var(--cyan);border:1px solid rgba(0,200,255,0.2);}
+.td-btn.view:hover{background:rgba(0,200,255,0.2);}
+.td-btn.edit{background:rgba(255,184,48,0.1);color:var(--warn);border:1px solid rgba(255,184,48,0.2);}
+.td-btn.edit:hover{background:rgba(255,184,48,0.2);}
+.td-btn.del{background:rgba(255,64,96,0.1);color:var(--error);border:1px solid rgba(255,64,96,0.2);}
+.td-btn.del:hover{background:rgba(255,64,96,0.2);}
+
+/* ══ AGENTS ══ */
+.agents-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.agent-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:16px;
+  padding:22px;position:relative;overflow:hidden;
+  transition:border-color .25s,transform .25s;
+  animation:cardIn .5s cubic-bezier(0.16,1,0.3,1) both;
+  cursor:pointer;
+}
+.agent-card:hover{border-color:var(--border-lit);transform:translateY(-2px);}
+.agent-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,200,255,0.2),transparent);}
+.agent-card-top{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.agent-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;position:relative;}
+.agent-avatar::after{content:'';position:absolute;bottom:0;right:0;width:12px;height:12px;border-radius:50%;border:2px solid var(--s1);}
+.agent-avatar.online::after{background:var(--green);}
+.agent-avatar.offline::after{background:var(--muted);}
+.agent-info{flex:1;}
+.agent-n{font-family:var(--fh);font-size:15px;font-weight:600;margin-bottom:2px;}
+.agent-id{font-size:11px;color:var(--muted);}
+.agent-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.agent-stat{background:rgba(255,255,255,0.03);border-radius:10px;padding:10px;}
+.agent-stat-v{font-family:var(--fh);font-size:20px;font-weight:700;}
+.agent-stat-l{font-size:11px;color:var(--muted);margin-top:2px;}
+.agent-zone{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;color:var(--muted);}
+
+/* ══ CREATE PACKAGE FORM ══ */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:860px;}
+.form-card{background:var(--s1);border:1px solid var(--border);border-radius:16px;padding:28px;position:relative;overflow:hidden;grid-column:span 2;}
+.form-card.half{grid-column:span 1;}
+.form-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,200,255,0.2),transparent);}
+.form-section-title{font-family:var(--fh);font-size:15px;font-weight:600;margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.form-row.single{grid-template-columns:1fr;}
+.form-field{display:flex;flex-direction:column;gap:7px;}
+.form-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:500;}
+.form-input,.form-select{
+  background:rgba(255,255,255,0.04);border:1.5px solid var(--border);
+  border-radius:10px;padding:12px 16px;color:var(--text);
+  font-family:var(--fb);font-size:14px;outline:none;
+  transition:border-color .25s,box-shadow .25s;
+}
+.form-input:focus,.form-select:focus{border-color:rgba(0,200,255,0.4);box-shadow:0 0 0 3px rgba(0,200,255,0.06);}
+.form-input::placeholder{color:var(--muted2);}
+.form-select{appearance:none;cursor:pointer;}
+.form-actions{display:flex;gap:12px;margin-top:8px;grid-column:span 2;}
+.btn-submit{padding:14px 36px;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;border-radius:12px;color:#fff;font-family:var(--fh);font-size:14px;font-weight:700;cursor:pointer;transition:all .25s;letter-spacing:.4px;}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(26,110,255,0.4);}
+.btn-cancel{padding:14px 28px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:12px;color:var(--muted);font-family:var(--fh);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-cancel:hover{background:rgba(255,255,255,0.09);color:var(--text);}
+.btn-submit.loading .btext{display:none;}.btn-submit .bspin{display:none;width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;margin:0 auto;}
+.btn-submit.loading .bspin{display:block;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ══ MODAL ══ */
+.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(3,6,15,0.92);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-box{background:rgba(10,18,35,0.98);border:1px solid var(--border);border-radius:20px;width:520px;max-width:95vw;animation:modalIn .4s cubic-bezier(0.16,1,0.3,1);position:relative;overflow:hidden;}
+@keyframes modalIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
+.modal-box::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(0,200,255,0.4),transparent);}
+.modal-top{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);}
+.modal-title{font-family:var(--fh);font-size:18px;font-weight:700;}
+.modal-close{width:32px;height:32px;background:rgba(255,255,255,0.06);border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .2s;}
+.modal-close:hover{background:rgba(255,64,96,0.15);color:var(--error);}
+.modal-body{padding:24px;}
+.modal-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.modal-row:last-child{border-bottom:none;}
+.modal-key{font-size:12px;color:var(--muted);}
+.modal-val{font-size:13px;font-weight:500;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;}
+.modal-btn{flex:1;padding:11px;border-radius:11px;font-family:var(--fh);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;border:none;display:flex;align-items:center;justify-content:center;gap:6px;}
+.modal-btn.primary{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;}
+.modal-btn.primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(26,110,255,0.35);}
+.modal-btn.danger{background:rgba(255,64,96,0.15);border:1px solid rgba(255,64,96,0.25);color:var(--error);}
+.modal-btn.danger:hover{background:rgba(255,64,96,0.25);}
+.modal-btn.ghost{background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--muted);}
+.modal-btn.ghost:hover{background:rgba(255,255,255,0.09);color:var(--text);}
+
+/* ══ TOAST ══ */
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(10,18,35,0.97);border:1px solid var(--border);border-radius:14px;padding:13px 22px;font-size:13.5px;font-weight:500;display:flex;align-items:center;gap:10px;box-shadow:0 16px 48px rgba(0,0,0,0.5);transition:transform .5s cubic-bezier(0.16,1,0.3,1);z-index:1000;min-width:260px;backdrop-filter:blur(20px);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.s{border-color:rgba(0,245,160,0.35);}.toast.e{border-color:rgba(255,64,96,0.35);}.toast.i{border-color:rgba(0,200,255,0.35);}.toast.w{border-color:rgba(255,184,48,0.35);}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--muted2);border-radius:4px;}
+
+@media(max-width:1100px){.stats-grid{grid-template-columns:1fr 1fr;}.agents-grid{grid-template-columns:1fr 1fr;}.overview-bottom{grid-template-columns:1fr;}}
+@media(max-width:700px){.sidebar{display:none;}.stats-grid{grid-template-columns:1fr;}.form-grid,.form-row{grid-template-columns:1fr;}.form-actions{grid-column:span 1;}}
+</style>
+</head>
+<body>
+
+<div id="cur"></div><div id="cur-ring"></div>
+<canvas id="starfield"></canvas>
+<div class="grid-bg"></div>
+<div class="neb neb1"></div><div class="neb neb2"></div>
+
+<!-- ══ SIDEBAR ══ -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-hex"><span>📦</span></div>
+    <div class="logo-text">Trace<em>360</em></div>
+    <span class="logo-badge">ADMIN</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <div class="nav-item active" onclick="showPanel('overview',this)"><span class="nav-icon">🏠</span>Overview</div>
+    <div class="nav-item" onclick="showPanel('packages',this)"><span class="nav-icon">📦</span>Packages<span class="nav-badge">3</span></div>
+    <div class="nav-item" onclick="showPanel('agents',this)"><span class="nav-icon">🚚</span>Agents<span class="nav-badge green">5</span></div>
+    <div class="nav-item" onclick="showPanel('create',this)"><span class="nav-icon">➕</span>New Package</div>
+
+    <div class="nav-section-label">System</div>
+    <div class="nav-item" onclick="toast('Reports coming soon','i')"><span class="nav-icon">📊</span>Reports</div>
+    <div class="nav-item" onclick="toast('Notifications panel','i')"><span class="nav-icon">🔔</span>Alerts<span class="nav-badge">2</span></div>
+    <div class="nav-item" onclick="toast('Settings panel','i')"><span class="nav-icon">⚙️</span>Settings</div>
+    <div class="nav-item" onclick="toast('Logging out...','i')"><span class="nav-icon">🚪</span>Logout</div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="admin-profile">
+      <div class="admin-avatar">👑</div>
+      <div class="admin-info">
+        <div class="admin-name">Super Admin</div>
+        <div class="admin-role">System Administrator</div>
+      </div>
+      <div class="admin-dot"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title" id="topbar-title">Overview</div>
+      <div class="topbar-sub" id="topbar-sub">Friday, April 24, 2026 · Live data</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-search">
+        <span style="color:var(--muted);font-size:14px">🔍</span>
+        <input type="text" placeholder="Search packages, agents..." oninput="globalSearch(this.value)"/>
+      </div>
+      <div class="topbar-icon-btn notif-btn" onclick="toast('2 new alerts','w')">🔔<div class="notif-dot"></div></div>
+      <div class="topbar-icon-btn" onclick="toast('Refreshing data...','i')">🔄</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ OVERVIEW PANEL ══ -->
+    <div class="panel active" id="panel-overview">
+      <div class="stats-grid">
+        <div class="stat-card" style="animation-delay:.05s" onclick="showPanel('packages',document.querySelector('.nav-item:nth-child(3)'))">
+          <div class="stat-icon">📦</div>
+          <div class="stat-val" style="color:var(--cyan)" id="sc-total">0</div>
+          <div class="stat-label">Total Packages</div>
+          <div class="stat-change up">↑ 12% this week</div>
+          <div class="stat-glow" style="background:var(--cyan)"></div>
+        </div>
+        <div class="stat-card" style="animation-delay:.1s">
+          <div class="stat-icon">✅</div>
+          <div class="stat-val" style="color:var(--green)" id="sc-delivered">0</div>
+          <div class="stat-label">Delivered Today</div>
+          <div class="stat-change up">↑ 8% vs yesterday</div>
+          <div class="stat-glow" style="background:var(--green)"></div>
+        </div>
+        <div class="stat-card" style="animation-delay:.15s">
+          <div class="stat-icon">🚚</div>
+          <div class="stat-val" style="color:var(--warn)" id="sc-transit">0</div>
+          <div class="stat-label">In Transit</div>
+          <div class="stat-change up">↑ 3 from morning</div>
+          <div class="stat-glow" style="background:var(--warn)"></div>
+        </div>
+        <div class="stat-card" style="animation-delay:.2s" onclick="showPanel('agents',document.querySelector('.nav-item:nth-child(4)'))">
+          <div class="stat-icon">👥</div>
+          <div class="stat-val" style="color:var(--violet)" id="sc-agents">0</div>
+          <div class="stat-label">Active Agents</div>
+          <div class="stat-change up">↑ 2 online now</div>
+          <div class="stat-glow" style="background:var(--violet)"></div>
+        </div>
+      </div>
+
+      <div class="overview-bottom">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">📈 Delivery Performance</div>
+            <div class="chart-tabs">
+              <button class="chart-tab active" onclick="updateChart('week',this)">7D</button>
+              <button class="chart-tab" onclick="updateChart('month',this)">30D</button>
+              <button class="chart-tab" onclick="updateChart('year',this)">1Y</button>
+            </div>
+          </div>
+          <canvas id="deliveryChart"></canvas>
+        </div>
+
+        <div class="activity-card">
+          <div class="activity-title">⚡ Live Activity</div>
+          <div class="activity-list" id="activity-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PACKAGES PANEL ══ -->
+    <div class="panel" id="panel-packages">
+      <div class="table-header">
+        <div class="table-title">All Packages</div>
+        <div class="table-actions">
+          <select class="filter-select" id="status-filter" onchange="filterPackages()">
+            <option value="all">All Status</option>
+            <option value="transit">In Transit</option>
+            <option value="delivered">Delivered</option>
+            <option value="pending">Pending</option>
+            <option value="failed">Failed</option>
+          </select>
+          <button class="btn-new" onclick="showPanel('create',document.querySelector('.nav-item:nth-child(5)'))">➕ New Package</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tracking ID</th>
+              <th>Receiver</th>
+              <th>Destination</th>
+              <th>Agent</th>
+              <th>Status</th>
+              <th>ETA</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="packages-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ AGENTS PANEL ══ -->
+    <div class="panel" id="panel-agents">
+      <div class="table-header">
+        <div class="table-title">Delivery Agents</div>
+        <div class="table-actions">
+          <button class="btn-new" onclick="toast('Add agent form coming soon','i')">➕ Add Agent</button>
+        </div>
+      </div>
+      <div class="agents-grid" id="agents-grid"></div>
+    </div>
+
+    <!-- ══ CREATE PACKAGE PANEL ══ -->
+    <div class="panel" id="panel-create">
+      <div class="table-header">
+        <div class="table-title">Create New Package</div>
+      </div>
+      <div class="form-grid">
+        <div class="form-card">
+          <div class="form-section-title">📦 Shipment Information</div>
+          <div class="form-row">
+            <div class="form-field"><div class="form-label">Sender Name</div><input class="form-input" id="f-sender" placeholder="e.g. Meera Traders"/></div>
+            <div class="form-field"><div class="form-label">Sender City</div><input class="form-input" id="f-from" placeholder="e.g. Mumbai, MH"/></div>
+          </div>
+          <div class="form-row">
+            <div class="form-field"><div class="form-label">Receiver Name</div><input class="form-input" id="f-receiver" placeholder="e.g. Abhilasha Hubballi"/></div>
+            <div class="form-field"><div class="form-label">Receiver Email</div><input class="form-input" id="f-email" type="email" placeholder="receiver@email.com"/></div>
+          </div>
+          <div class="form-row">
+            <div class="form-field"><div class="form-label">Destination</div><input class="form-input" id="f-dest" placeholder="e.g. Belagavi, KA"/></div>
+            <div class="form-field"><div class="form-label">Package Weight (kg)</div><input class="form-input" id="f-weight" type="number" step="0.1" placeholder="2.5"/></div>
+          </div>
+        </div>
+
+        <div class="form-card half">
+          <div class="form-section-title">🚚 Assign Agent</div>
+          <div class="form-row single">
+            <div class="form-field">
+              <div class="form-label">Select Agent</div>
+              <select class="form-select" id="f-agent">
+                <option value="">— Choose Agent —</option>
+                <option value="Ravi Kumar (AG-041)">Ravi Kumar — AG-041 (Belagavi)</option>
+                <option value="Priya Nair (AG-017)">Priya Nair — AG-017 (Hubli)</option>
+                <option value="Mohan Das (AG-009)">Mohan Das — AG-009 (Dharwad)</option>
+                <option value="Sneha Patil (AG-022)">Sneha Patil — AG-022 (Belgaum)</option>
+                <option value="Arjun Rao (AG-035)">Arjun Rao — AG-035 (Bijapur)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row single">
+            <div class="form-field">
+              <div class="form-label">Priority</div>
+              <select class="form-select" id="f-priority">
+                <option>Standard</option>
+                <option>Express</option>
+                <option>Same Day</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row single">
+            <div class="form-field">
+              <div class="form-label">Package Type</div>
+              <select class="form-select" id="f-type">
+                <option>Document</option>
+                <option>Parcel</option>
+                <option>Fragile</option>
+                <option>Electronics</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-card half">
+          <div class="form-section-title">📧 Notifications</div>
+          <div style="display:flex;flex-direction:column;gap:12px;font-size:14px;">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" checked style="accent-color:var(--cyan)"/> Send tracking ID email to receiver</label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" checked style="accent-color:var(--cyan)"/> Notify agent via SMS</label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" style="accent-color:var(--cyan)"/> Enable delivery photo proof</label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;"><input type="checkbox" checked style="accent-color:var(--cyan)"/> Status update emails</label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-submit" id="create-btn" onclick="createPackage()">
+            <span class="btext">📦 Create Package & Send Email</span>
+            <div class="bspin"></div>
+          </button>
+          <button class="btn-cancel" onclick="showPanel('packages',document.querySelector('.nav-item:nth-child(3)'))">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+</div><!-- end main -->
+
+<!-- Package Detail Modal -->
+<div class="modal-overlay" id="pkg-modal">
+  <div class="modal-box">
+    <div class="modal-top">
+      <div class="modal-title" id="modal-pkg-title">Package Details</div>
+      <div class="modal-close" onclick="closeModal()">✕</div>
+    </div>
+    <div class="modal-body" id="modal-pkg-body"></div>
+    <div class="modal-footer">
+      <button class="modal-btn primary" onclick="toast('Status updated','s');closeModal()">✏️ Edit Status</button>
+      <button class="modal-btn danger" onclick="deletePackageFromModal()">🗑 Delete</button>
+      <button class="modal-btn ghost" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="t-ico"></span><span id="t-msg"></span></div>
+
+<script>
+/* ══ CURSOR ══ */
+const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+(function loop(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(loop);})();
+
+/* ══ STARFIELD ══ */
+(function(){
+  const c=document.getElementById('starfield'),ctx=c.getContext('2d');
+  function r(){c.width=innerWidth;c.height=innerHeight;}r();addEventListener('resize',r);
+  const stars=Array.from({length:160},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.3+.2,a:Math.random(),da:(Math.random()-.5)*.004,vx:(Math.random()-.5)*.1,vy:(Math.random()-.5)*.1}));
+  (function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.x+=s.vx;s.y+=s.vy;s.a+=s.da;if(s.a<0||s.a>1)s.da*=-1;if(s.x<0)s.x=c.width;if(s.x>c.width)s.x=0;if(s.y<0)s.y=c.height;if(s.y>c.height)s.y=0;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(180,210,255,${s.a*.6})`;ctx.fill();});requestAnimationFrame(draw);})();
+})();
+
+/* ══ DATA ══ */
+let packages=[
+  {id:'TRK-20240423-001',receiver:'Abhilasha Hubballi',dest:'Belagavi, KA',agent:'Ravi Kumar (AG-041)',status:'transit',eta:'Today 4:30 PM',weight:'2.4 kg',sender:'Meera Traders, Mumbai',from:'Mumbai, MH',email:'abhilashahubballi2002@gmail.com'},
+  {id:'TRK-20240419-007',receiver:'Sanjay Patil',dest:'Hubli, KA',agent:'Priya Nair (AG-017)',status:'delivered',eta:'Delivered',weight:'0.8 kg',sender:'Flipkart Warehouse, Pune',from:'Pune, MH',email:'sanjay@email.com'},
+  {id:'TRK-20240415-042',receiver:'Kavita Rao',dest:'Dharwad, KA',agent:'Mohan Das (AG-009)',status:'pending',eta:'Tomorrow',weight:'3.1 kg',sender:'Amazon, Bengaluru',from:'Bengaluru, KA',email:'kavita@email.com'},
+  {id:'TRK-20240424-003',receiver:'Meena Kulkarni',dest:'Bijapur, KA',agent:'Sneha Patil (AG-022)',status:'transit',eta:'Today 6:00 PM',weight:'1.2 kg',sender:'Myntra, Bengaluru',from:'Bengaluru, KA',email:'meena@email.com'},
+  {id:'TRK-20240424-011',receiver:'Rahul Desai',dest:'Belgaum, KA',agent:'Arjun Rao (AG-035)',status:'failed',eta:'Rescheduled',weight:'0.5 kg',sender:'Snapdeal, Delhi',from:'Delhi, DL',email:'rahul@email.com'},
+];
+
+const agents=[
+  {name:'Ravi Kumar',id:'AG-041',zone:'Belagavi',delivered:24,active:2,status:'online',avatar:'🧑'},
+  {name:'Priya Nair',id:'AG-017',zone:'Hubli',delivered:31,active:1,status:'online',avatar:'👩'},
+  {name:'Mohan Das',id:'AG-009',zone:'Dharwad',delivered:18,active:1,status:'online',avatar:'👨'},
+  {name:'Sneha Patil',id:'AG-022',zone:'Belgaum',delivered:22,active:1,status:'online',avatar:'👩'},
+  {name:'Arjun Rao',id:'AG-035',zone:'Bijapur',delivered:15,active:0,status:'offline',avatar:'🧑'},
+];
+
+const activities=[
+  {col:'#00f5a0',text:'TRK-20240419-007 delivered to Sanjay Patil',time:'2m ago'},
+  {col:'#00c8ff',text:'Agent Ravi Kumar updated GPS location',time:'5m ago'},
+  {col:'#ffb830',text:'New package TRK-20240424-011 created',time:'12m ago'},
+  {col:'#ff4060',text:'Delivery failed for TRK-20240424-011 — Rescheduled',time:'18m ago'},
+  {col:'#00c8ff',text:'TRK-20240424-003 picked up by Sneha Patil',time:'32m ago'},
+  {col:'#00f5a0',text:'Agent Priya Nair completed shift check-in',time:'1h ago'},
+];
+
+let openPkgId=null;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const API='https://trace360-oxzm.onrender.com';
+function authHeaders(){return{'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('trace360_token')||'')};}
+(function(){const token=localStorage.getItem('trace360_token');if(!token){window.location.href='trace360-auth-v2.html';}})();
+
+/* ══ PANEL NAV ══ */
+function showPanel(name,navEl){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(navEl)navEl.classList.add('active');
+  const titles={overview:'Overview',packages:'Packages',agents:'Agents',create:'New Package'};
+  document.getElementById('topbar-title').textContent=titles[name]||name;
+  if(name==='packages')renderPackages();
+  if(name==='agents')renderAgents();
+}
+
+/* ══ COUNTER ANIMATION ══ */
+function animCount(el,target,dur=1500){
+  let start=null;
+  (function step(ts){
+    if(!start)start=ts;
+    const p=Math.min((ts-start)/dur,1);
+    const ease=1-Math.pow(1-p,3);
+    el.textContent=Math.floor(target*ease);
+    if(p<1)requestAnimationFrame(step);
+  })(performance.now());
+}
+
+/* ══ INIT ══ */
+function init(){
+  setTimeout(()=>{
+    animCount(document.getElementById('sc-total'),packages.length,1200);
+    animCount(document.getElementById('sc-delivered'),packages.filter(p=>p.status==='delivered').length,1400);
+    animCount(document.getElementById('sc-transit'),packages.filter(p=>p.status==='transit').length,1300);
+    animCount(document.getElementById('sc-agents'),agents.filter(a=>a.status==='online').length,1500);
+  },300);
+  renderActivity();
+  initChart();
+}
+init();
+
+/* ══ ACTIVITY ══ */
+function renderActivity(){
+  document.getElementById('activity-list').innerHTML=activities.map(a=>`
+    <div class="activity-item" style="animation:panelIn .4s ease both">
+      <div class="activity-dot" style="background:${a.col}"></div>
+      <div class="activity-text">${a.text}</div>
+      <div class="activity-time">${a.time}</div>
+    </div>`).join('');
+}
+
+/* ══ CHART ══ */
+let chartInst=null;
+const chartData={
+  week:{labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],delivered:[8,14,11,18,22,16,12],transit:[5,8,9,12,15,10,8]},
+  month:{labels:['W1','W2','W3','W4'],delivered:[45,62,55,78],transit:[22,30,28,38]},
+  year:{labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],delivered:[120,145,130,180,200,175,160,190,210,195,220,240],transit:[60,75,65,90,100,88,80,95,105,98,110,120]}
+};
+
+function initChart(){
+  const canvas=document.getElementById('deliveryChart');
+  const ctx=canvas.getContext('2d');
+  const d=chartData.week;
+  drawChart(ctx,canvas,d);
+}
+
+function updateChart(period,btn){
+  document.querySelectorAll('.chart-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  const canvas=document.getElementById('deliveryChart');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawChart(ctx,canvas,chartData[period]);
+}
+
+function drawChart(ctx,canvas,data){
+  const W=canvas.parentElement.clientWidth-48;
+  const H=220;
+  canvas.width=W;canvas.height=H;
+  const pad={l:40,r:20,t:20,b:32};
+  const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
+  const maxVal=Math.max(...data.delivered,...data.transit)*1.2;
+  const n=data.labels.length;
+  const step=cW/(n-1);
+
+  // Grid lines
+  ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+cH-(i/4)*cH;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+cW,y);ctx.stroke();
+    ctx.fillStyle='rgba(74,98,128,0.8)';ctx.font='10px sans-serif';ctx.textAlign='right';
+    ctx.fillText(Math.round(maxVal*i/4),pad.l-6,y+4);
+  }
+
+  // X labels
+  ctx.textAlign='center';ctx.fillStyle='rgba(74,98,128,0.8)';ctx.font='11px sans-serif';
+  data.labels.forEach((l,i)=>ctx.fillText(l,pad.l+i*step,H-8));
+
+  function drawLine(vals,color,fillColor){
+    const pts=vals.map((v,i)=>({x:pad.l+i*step,y:pad.t+cH-(v/maxVal)*cH}));
+    // Fill
+    const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+cH);
+    grad.addColorStop(0,fillColor);grad.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.beginPath();ctx.moveTo(pts[0].x,pad.t+cH);
+    pts.forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.lineTo(pts[pts.length-1].x,pad.t+cH);ctx.closePath();
+    ctx.fillStyle=grad;ctx.fill();
+    // Line
+    ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.lineCap='round';
+    pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.stroke();
+    // Dots
+    pts.forEach(p=>{
+      ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);
+      ctx.fillStyle=color;ctx.fill();
+      ctx.beginPath();ctx.arc(p.x,p.y,2.5,0,Math.PI*2);
+      ctx.fillStyle='#060d1c';ctx.fill();
+    });
+  }
+
+  drawLine(data.transit,'rgba(255,184,48,0.9)','rgba(255,184,48,0.12)');
+  drawLine(data.delivered,'rgba(0,200,255,0.9)','rgba(0,200,255,0.12)');
+
+  // Legend
+  ctx.textAlign='left';
+  [{col:'rgba(0,200,255,0.9)',l:'Delivered'},{col:'rgba(255,184,48,0.9)',l:'In Transit'}].forEach((it,i)=>{
+    const x=pad.l+i*100;
+    ctx.fillStyle=it.col;ctx.fillRect(x,4,14,3);
+    ctx.fillStyle='rgba(180,200,255,0.7)';ctx.font='11px sans-serif';ctx.fillText(it.l,x+18,8);
+  });
+}
+
+/* ══ PACKAGES TABLE ══ */
+function renderPackages(filter='all'){
+  const filtered=filter==='all'?packages:packages.filter(p=>p.status===filter);
+  const statusMap={transit:'In Transit',delivered:'Delivered',pending:'Pending',failed:'Failed'};
+  document.getElementById('packages-table-body').innerHTML=filtered.map((p,i)=>`
+    <tr onclick="openPackage('${p.id}')" style="animation:panelIn .4s ease ${i*.04}s both">
+      <td><span class="td-id">${p.id}</span></td>
+      <td>${p.receiver}</td>
+      <td>${p.dest}</td>
+      <td style="color:var(--muted);font-size:12px">${p.agent}</td>
+      <td><span class="td-badge ${p.status}"><span class="td-dot"></span>${statusMap[p.status]}</span></td>
+      <td style="color:var(--muted);font-size:12px">${p.eta}</td>
+      <td><div class="td-actions" onclick="event.stopPropagation()">
+        <button class="td-btn view" onclick="openPackage('${p.id}')">👁 View</button>
+        <button class="td-btn edit" onclick="editPkg('${p.id}')">✏️</button>
+        <button class="td-btn del" onclick="deletePkg('${p.id}')">🗑</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function filterPackages(){
+  const f=document.getElementById('status-filter').value;
+  renderPackages(f);
+}
+
+function globalSearch(q){
+  if(!q){renderPackages();return;}
+  const ql=q.toLowerCase();
+  const filtered=packages.filter(p=>p.id.toLowerCase().includes(ql)||p.receiver.toLowerCase().includes(ql)||p.dest.toLowerCase().includes(ql)||p.agent.toLowerCase().includes(ql));
+  const statusMap={transit:'In Transit',delivered:'Delivered',pending:'Pending',failed:'Failed'};
+  document.getElementById('packages-table-body').innerHTML=filtered.map(p=>`
+    <tr onclick="openPackage('${p.id}')">
+      <td><span class="td-id">${p.id}</span></td>
+      <td>${p.receiver}</td><td>${p.dest}</td>
+      <td style="color:var(--muted);font-size:12px">${p.agent}</td>
+      <td><span class="td-badge ${p.status}"><span class="td-dot"></span>${statusMap[p.status]}</span></td>
+      <td style="color:var(--muted);font-size:12px">${p.eta}</td>
+      <td><div class="td-actions" onclick="event.stopPropagation()">
+        <button class="td-btn view" onclick="openPackage('${p.id}')">👁 View</button>
+        <button class="td-btn del" onclick="deletePkg('${p.id}')">🗑</button>
+      </div></td>
+    </tr>`).join('')||'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px">No results found</td></tr>';
+}
+
+function openPackage(id){
+  const p=packages.find(x=>x.id===id);if(!p)return;
+  openPkgId=id;
+  const statusMap={transit:'🚚 In Transit',delivered:'✅ Delivered',pending:'⏳ Pending',failed:'❌ Failed'};
+  document.getElementById('modal-pkg-title').textContent=p.id;
+  document.getElementById('modal-pkg-body').innerHTML=[
+    ['Receiver',p.receiver],['Email',p.email],
+    ['Sender',p.sender],['From',p.from],
+    ['Destination',p.dest],['Agent',p.agent],
+    ['Weight',p.weight],['Status',statusMap[p.status]],
+    ['ETA',p.eta]
+  ].map(([k,v])=>`<div class="modal-row"><span class="modal-key">${k}</span><span class="modal-val">${v}</span></div>`).join('');
+  document.getElementById('pkg-modal').classList.add('show');
+}
+
+function closeModal(){document.getElementById('pkg-modal').classList.remove('show');}
+
+function deletePkg(id){
+  packages=packages.filter(p=>p.id!==id);
+  renderPackages();
+  updateStatCards();
+  toast('Package deleted','s');
+}
+function deletePackageFromModal(){
+  if(openPkgId)deletePkg(openPkgId);
+  closeModal();
+}
+function editPkg(id){toast(`Opening editor for ${id}`,'i');}
+
+function updateStatCards(){
+  document.getElementById('sc-total').textContent=packages.length;
+  document.getElementById('sc-delivered').textContent=packages.filter(p=>p.status==='delivered').length;
+  document.getElementById('sc-transit').textContent=packages.filter(p=>p.status==='transit').length;
+}
+
+/* ══ AGENTS ══ */
+function renderAgents(){
+  document.getElementById('agents-grid').innerHTML=agents.map((a,i)=>`
+    <div class="agent-card" style="animation-delay:${i*.07}s" onclick="toast('${a.name} — ${a.delivered} deliveries total','i')">
+      <div class="agent-card-top">
+        <div class="agent-avatar ${a.status}" style="background:linear-gradient(135deg,rgba(26,110,255,0.3),rgba(0,200,255,0.2))">${a.avatar}
+        </div>
+        <div class="agent-info">
+          <div class="agent-n">${a.name}</div>
+          <div class="agent-id">${a.id} · <span style="color:${a.status==='online'?'var(--green)':'var(--muted)'}">${a.status}</span></div>
+        </div>
+      </div>
+      <div class="agent-stats">
+        <div class="agent-stat"><div class="agent-stat-v" style="color:var(--cyan)">${a.delivered}</div><div class="agent-stat-l">Total Delivered</div></div>
+        <div class="agent-stat"><div class="agent-stat-v" style="color:${a.active>0?'var(--warn)':'var(--muted)'}">${a.active}</div><div class="agent-stat-l">Active Now</div></div>
+      </div>
+      <div class="agent-zone">📍 Zone: ${a.zone}</div>
+    </div>`).join('');
+}
+
+/* ══ CREATE PACKAGE ══ */
+async function createPackage(){
+  const btn=document.getElementById('create-btn');
+  const sender=document.getElementById('f-sender').value.trim();
+  const receiver=document.getElementById('f-receiver').value.trim();
+  const email=document.getElementById('f-email').value.trim();
+  const dest=document.getElementById('f-dest').value.trim();
+  const agent=document.getElementById('f-agent').value;
+  const weight=document.getElementById('f-weight').value;
+  const from=document.getElementById('f-from').value.trim();
+
+  if(!sender||!receiver||!email||!dest||!agent||!weight||!from){toast('Please fill all fields','e');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){toast('Invalid email address','e');return;}
+
+  try{
+    btn.classList.add('loading');btn.disabled=true;
+    const res=await fetch(`${API}/api/packages`,{method:'POST',headers:authHeaders(),body:JSON.stringify({
+      senderName:sender,senderCity:from,
+      receiverName:receiver,receiverEmail:email,
+      destination:dest,weightKg:parseFloat(weight),
+      agentId:parseInt(agent)||1,
+      sendEmailToReceiver:true
+    })});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.message||'Failed to create package');
+    const newId=data.data?.trackingId||data.trackingId||'TRK-NEW';
+    packages.unshift({id:newId,receiver,dest,agent,status:'pending',eta:'Tomorrow',weight:`${weight} kg`,sender,from,email});
+    updateStatCards();
+    activities.unshift({col:'#00c8ff',text:`New package ${newId} created for ${receiver}`,time:'just now'});
+    renderActivity();
+    toast(`✅ Package ${newId} created! Email sent to ${email}`,'s');
+    ['f-sender','f-receiver','f-email','f-dest','f-weight','f-from'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-agent').value='';
+    setTimeout(()=>showPanel('packages',document.querySelector('.nav-item:nth-child(3)')),1500);
+  }catch(e){toast(e.message||'Failed to create package','e');}
+  finally{btn.classList.remove('loading');btn.disabled=false;}
+}
+
+/* ══ TOAST ══ */
+function toast(m,type='i'){
+  const icons={s:'✅',e:'❌',i:'ℹ️',w:'⚠️'};
+  const t=document.getElementById('toast');
+  document.getElementById('t-ico').textContent=icons[type];
+  document.getElementById('t-msg').textContent=m;
+  t.className=`toast ${type} show`;
+  setTimeout(()=>t.className=`toast ${type}`,3200);
+}
+
+window.addEventListener('resize',()=>{
+  const c=document.getElementById('deliveryChart');
+  if(c){const ctx=c.getContext('2d');const activeTab=document.querySelector('.chart-tab.active');const period=activeTab?.textContent==='7D'?'week':activeTab?.textContent==='30D'?'month':'year';drawChart(ctx,c,chartData[period]);}
+});
+</script>
+</body>
+</html>

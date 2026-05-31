@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Trace360 — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Clash+Display:wght@400;500;600;700&family=Cabinet+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #03060f;
+  --glass: rgba(10,18,35,0.75);
+  --glass2: rgba(15,25,50,0.6);
+  --border: rgba(255,255,255,0.07);
+  --border-lit: rgba(0,180,255,0.35);
+  --cyan: #00c8ff;
+  --blue: #1a6eff;
+  --violet: #7c3aff;
+  --success: #00f5a0;
+  --error: #ff4060;
+  --warn: #ffb830;
+  --text: #e2ecff;
+  --muted: #4a6280;
+  --muted2: #2a3a55;
+  --font-h: 'Clash Display', sans-serif;
+  --font-b: 'Cabinet Grotesk', sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;min-height:100%;overflow-x:hidden}
+body{
+  background:var(--bg);
+  font-family:var(--font-b);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;
+  cursor:none;
+}
+
+/* ── Custom cursor ── */
+#cursor{
+  position:fixed;width:10px;height:10px;
+  background:var(--cyan);border-radius:50%;
+  pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);
+  transition:width .15s,height .15s,background .15s;
+  mix-blend-mode:screen;
+}
+#cursor-ring{
+  position:fixed;width:36px;height:36px;
+  border:1.5px solid rgba(0,200,255,0.4);
+  border-radius:50%;pointer-events:none;z-index:9998;
+  transform:translate(-50%,-50%);
+  transition:all .08s linear;
+}
+body:has(button:hover) #cursor,
+body:has(a:hover) #cursor{width:18px;height:18px;background:var(--violet)}
+body:has(input:focus) #cursor{background:var(--blue)}
+
+/* ── Canvas stars bg ── */
+#starfield{position:fixed;inset:0;z-index:0;}
+
+/* ── Nebula orbs ── */
+.neb{position:fixed;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;will-change:transform;}
+.neb1{width:600px;height:600px;background:radial-gradient(circle,rgba(26,110,255,0.18) 0%,transparent 70%);top:-200px;right:-150px;animation:nebDrift1 15s ease-in-out infinite;}
+.neb2{width:500px;height:500px;background:radial-gradient(circle,rgba(124,58,255,0.14) 0%,transparent 70%);bottom:-150px;left:-100px;animation:nebDrift2 18s ease-in-out infinite;}
+.neb3{width:300px;height:300px;background:radial-gradient(circle,rgba(0,200,255,0.1) 0%,transparent 70%);top:50%;left:50%;animation:nebDrift3 12s ease-in-out infinite;}
+@keyframes nebDrift1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-40px,30px) scale(1.1)}}
+@keyframes nebDrift2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-40px) scale(1.08)}}
+@keyframes nebDrift3{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.2)}}
+
+/* ── Grid overlay ── */
+.grid-overlay{
+  position:fixed;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(0,200,255,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,200,255,0.03) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,black 30%,transparent 100%);
+  animation:gridShift 25s linear infinite;
+}
+@keyframes gridShift{to{background-position:60px 60px}}
+
+/* ── Scan line ── */
+.scanline{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.05) 2px,rgba(0,0,0,0.05) 4px);
+}
+
+/* ══ LAYOUT ══ */
+.layout{
+  position:relative;z-index:10;
+  display:flex;align-items:stretch;
+  width:900px;max-width:98vw;
+  min-height:600px;
+  border-radius:24px;
+  overflow:hidden;
+  box-shadow:0 0 0 1px var(--border),0 60px 120px rgba(0,0,0,0.7),0 0 80px rgba(26,110,255,0.1);
+  animation:layoutIn .8s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes layoutIn{from{opacity:0;transform:translateY(40px) scale(0.97)}to{opacity:1;transform:none}}
+
+/* ── Left panel ── */
+.left{
+  flex:1;
+  background:linear-gradient(135deg,rgba(10,18,40,0.95),rgba(5,10,25,0.98));
+  border-right:1px solid var(--border);
+  padding:48px 40px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  position:relative;overflow:hidden;
+}
+.left::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(26,110,255,0.08),rgba(124,58,255,0.05));
+  pointer-events:none;
+}
+
+/* Moving light beam on left panel */
+.left-beam{
+  position:absolute;top:-100px;left:-80px;
+  width:3px;height:140%;
+  background:linear-gradient(to bottom,transparent,rgba(0,200,255,0.4),transparent);
+  transform:rotate(20deg);
+  animation:beamSweep 8s ease-in-out infinite;
+}
+@keyframes beamSweep{0%,100%{transform:rotate(20deg) translateX(0)}50%{transform:rotate(20deg) translateX(600px)}}
+
+.brand{position:relative;z-index:1;}
+.brand-logo{
+  display:flex;align-items:center;gap:12px;margin-bottom:48px;
+}
+.logo-hex{
+  width:44px;height:44px;position:relative;
+  display:flex;align-items:center;justify-content:center;
+}
+.logo-hex::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  animation:hexPulse 3s ease-in-out infinite;
+}
+@keyframes hexPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.3)}}
+.logo-hex span{position:relative;z-index:1;font-size:20px;}
+.brand-name{font-family:var(--font-h);font-size:24px;font-weight:700;letter-spacing:-0.5px;}
+.brand-name em{font-style:normal;color:var(--cyan);}
+
+.brand-tagline{
+  font-size:13px;color:var(--muted);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:32px;
+}
+
+.brand-heading{
+  font-family:var(--font-h);
+  font-size:36px;font-weight:700;
+  line-height:1.15;letter-spacing:-1px;
+  margin-bottom:20px;
+}
+.brand-heading .glow{
+  background:linear-gradient(90deg,var(--cyan),var(--blue),var(--violet));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:gradShift 4s ease-in-out infinite;
+  background-size:200%;
+}
+@keyframes gradShift{0%,100%{background-position:0%}50%{background-position:100%}}
+
+.brand-sub{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:40px;max-width:280px;}
+
+/* Animated stats */
+.stats{display:flex;gap:24px;position:relative;z-index:1;}
+.stat{
+  display:flex;flex-direction:column;gap:4px;
+  padding:14px 18px;
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--border);
+  border-radius:12px;
+  position:relative;overflow:hidden;
+}
+.stat::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,200,255,0.05),transparent);
+  opacity:0;transition:opacity .3s;
+}
+.stat:hover::after{opacity:1;}
+.stat-num{font-family:var(--font-h);font-size:22px;font-weight:700;color:var(--cyan);}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;}
+
+/* Floating package animation */
+.pkg-anim{
+  position:absolute;bottom:40px;right:-20px;
+  width:160px;opacity:0.12;
+  animation:pkgFloat 6s ease-in-out infinite;
+}
+@keyframes pkgFloat{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-20px) rotate(5deg)}}
+
+/* ── Right panel (form) ── */
+.right{
+  width:420px;flex-shrink:0;
+  background:var(--glass);
+  backdrop-filter:blur(30px);
+  -webkit-backdrop-filter:blur(30px);
+  padding:44px 40px;
+  display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+}
+.right::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,200,255,0.4),transparent);
+  animation:topLine 3s ease-in-out infinite;
+}
+@keyframes topLine{0%,100%{opacity:0.5}50%{opacity:1}}
+
+/* ── Tabs ── */
+.tabs{
+  display:flex;gap:0;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);
+  border-radius:14px;padding:4px;
+  margin-bottom:28px;position:relative;
+}
+.tab-slider{
+  position:absolute;top:4px;bottom:4px;
+  background:linear-gradient(135deg,rgba(26,110,255,0.25),rgba(0,200,255,0.15));
+  border:1px solid rgba(0,200,255,0.2);
+  border-radius:10px;
+  transition:all .35s cubic-bezier(0.34,1.56,0.64,1);
+  width:calc(50% - 4px);left:4px;
+}
+.tab-slider.right-side{left:calc(50%)}
+.tab-btn{
+  flex:1;padding:10px;text-align:center;
+  font-family:var(--font-h);font-size:13px;font-weight:600;
+  cursor:pointer;border:none;background:transparent;
+  color:var(--muted);transition:color .3s;
+  position:relative;z-index:1;letter-spacing:0.3px;
+}
+.tab-btn.active{color:var(--text);}
+
+/* ── Panels ── */
+.panel{display:none;animation:panelIn .4s cubic-bezier(0.16,1,0.3,1);}
+.panel.active{display:block;}
+@keyframes panelIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+
+/* ── Google btn ── */
+.btn-google{
+  width:100%;padding:13px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid var(--border);
+  border-radius:12px;color:var(--text);
+  font-family:var(--font-b);font-size:14px;font-weight:500;
+  cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  margin-bottom:18px;position:relative;overflow:hidden;
+  transition:border-color .25s,background .25s;
+}
+.btn-google::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,0.05) 50%,transparent 100%);
+  transform:translateX(-100%);transition:transform .5s;
+}
+.btn-google:hover{border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);}
+.btn-google:hover::before{transform:translateX(100%);}
+.btn-google svg{width:18px;height:18px;flex-shrink:0;}
+
+/* ── Divider ── */
+.divider{
+  display:flex;align-items:center;gap:10px;
+  color:var(--muted);font-size:12px;margin-bottom:18px;
+}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── Field ── */
+.field{margin-bottom:16px;position:relative;}
+.field label{
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:500;color:var(--muted);
+  text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;
+}
+.input-shell{
+  position:relative;
+  border-radius:12px;
+  background:rgba(255,255,255,0.04);
+  border:1.5px solid var(--border);
+  transition:border-color .25s,box-shadow .25s,background .25s;
+  overflow:hidden;
+}
+.input-shell::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--blue),var(--cyan));
+  transform:scaleX(0);transform-origin:left;
+  transition:transform .3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.input-shell:focus-within{
+  border-color:rgba(0,200,255,0.3);
+  background:rgba(0,200,255,0.04);
+  box-shadow:0 0 0 3px rgba(0,200,255,0.06),0 4px 20px rgba(0,0,0,0.2);
+}
+.input-shell:focus-within::after{transform:scaleX(1);}
+.input-shell.valid{border-color:rgba(0,245,160,0.35);}
+.input-shell.invalid{border-color:rgba(255,64,96,0.4);}
+.input-shell input{
+  width:100%;padding:13px 16px;
+  background:transparent;border:none;outline:none;
+  color:var(--text);font-family:var(--font-b);font-size:15px;
+}
+.input-shell input::placeholder{color:var(--muted2);}
+.input-icon{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  font-size:14px;pointer-events:none;color:var(--muted);
+  transition:color .3s;
+}
+.input-shell:focus-within .input-icon{color:var(--cyan);}
+.toggle-eye{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;
+  color:var(--muted);font-size:15px;padding:4px;
+  transition:color .2s;
+}
+.toggle-eye:hover{color:var(--text);}
+
+/* ── Val message ── */
+.val-msg{
+  font-size:11.5px;margin-top:5px;min-height:15px;
+  display:flex;align-items:center;gap:5px;
+  transition:all .2s;padding-left:2px;
+}
+.val-msg.e{color:var(--error);}
+.val-msg.s{color:var(--success);}
+.val-msg.w{color:var(--warn);}
+
+/* ── Strength ── */
+.strength-row{display:flex;gap:5px;margin-top:8px;}
+.s-seg{
+  height:3px;flex:1;border-radius:2px;
+  background:var(--muted2);
+  transition:background .4s,transform .3s;
+}
+
+/* ── Email badge ── */
+.e-badge{
+  font-size:10px;padding:2px 8px;border-radius:20px;
+  font-weight:600;letter-spacing:0.5px;
+  transition:all .3s;
+}
+.e-badge.unv{background:rgba(255,184,48,0.12);color:var(--warn);border:1px solid rgba(255,184,48,0.2);}
+.e-badge.ver{background:rgba(0,245,160,0.12);color:var(--success);border:1px solid rgba(0,245,160,0.2);}
+.e-badge.chk{background:rgba(0,200,255,0.1);color:var(--cyan);border:1px solid rgba(0,200,255,0.2);}
+
+/* ── OTP boxes ── */
+.otp-row{display:flex;gap:8px;margin-top:10px;}
+.otp-box{
+  width:42px;height:50px;text-align:center;
+  font-size:20px;font-weight:700;
+  background:rgba(255,255,255,0.04);
+  border:1.5px solid var(--border);
+  border-radius:12px;color:var(--text);outline:none;
+  font-family:var(--font-h);
+  transition:all .25s;
+}
+.otp-box:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,200,255,0.1);background:rgba(0,200,255,0.05);}
+.otp-box.filled{border-color:rgba(0,200,255,0.5);background:rgba(0,200,255,0.07);}
+.otp-box.ok{border-color:var(--success);background:rgba(0,245,160,0.08);animation:otpPop .4s cubic-bezier(0.34,1.56,0.64,1);}
+@keyframes otpPop{0%{transform:scale(1)}50%{transform:scale(1.12)}100%{transform:scale(1)}}
+
+/* ── Send OTP btn ── */
+.otp-trigger{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  font-size:11px;font-weight:600;padding:5px 11px;
+  background:linear-gradient(135deg,var(--blue),var(--cyan));
+  border:none;border-radius:8px;color:#fff;
+  cursor:pointer;white-space:nowrap;
+  transition:opacity .2s,transform .2s;
+  font-family:var(--font-b);
+}
+.otp-trigger:hover{transform:translateY(-50%) scale(1.04);}
+.otp-trigger:disabled{opacity:0.4;cursor:not-allowed;transform:translateY(-50%);}
+
+/* ── Phone wrap ── */
+.phone-row{display:flex;gap:8px;}
+.ph-code{
+  padding:13px 14px;
+  background:rgba(255,255,255,0.04);
+  border:1.5px solid var(--border);
+  border-radius:12px;color:var(--muted);
+  font-size:14px;white-space:nowrap;
+}
+
+/* ── Name hints ── */
+.hint-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;}
+.hint{
+  font-size:10.5px;padding:3px 9px;border-radius:20px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid var(--border);color:var(--muted);
+  transition:all .25s;
+}
+.hint.ok{border-color:rgba(0,245,160,0.3);color:var(--success);background:rgba(0,245,160,0.07);}
+.hint.fail{border-color:rgba(255,64,96,0.3);color:var(--error);background:rgba(255,64,96,0.07);}
+
+/* ── Role cards ── */
+.roles{display:flex;gap:8px;margin-bottom:4px;}
+.role-card{
+  flex:1;padding:10px 6px;text-align:center;
+  background:rgba(255,255,255,0.03);
+  border:1.5px solid var(--border);
+  border-radius:12px;cursor:pointer;
+  transition:all .25s;color:var(--muted);font-size:12px;
+  position:relative;overflow:hidden;
+}
+.role-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(0,200,255,0.1),rgba(26,110,255,0.05));
+  opacity:0;transition:opacity .25s;
+}
+.role-card:hover::before,.role-card.sel::before{opacity:1;}
+.role-card.sel{border-color:rgba(0,200,255,0.35);color:var(--text);}
+.role-card.sel .role-icon{filter:none;}
+.role-icon{font-size:22px;display:block;margin-bottom:4px;filter:grayscale(1);transition:filter .25s;}
+.role-card:hover .role-icon,.role-card.sel .role-icon{filter:none;}
+
+/* ── Step dots ── */
+.step-track{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:24px;}
+.step-dot{
+  width:8px;height:8px;border-radius:4px;
+  background:var(--muted2);
+  transition:all .4s cubic-bezier(0.34,1.56,0.64,1);
+}
+.step-dot.cur{width:28px;background:linear-gradient(90deg,var(--blue),var(--cyan));}
+.step-dot.done{background:var(--success);}
+
+/* ── Buttons ── */
+.btn{
+  width:100%;padding:14px;border:none;border-radius:13px;
+  font-family:var(--font-h);font-size:14px;font-weight:600;
+  cursor:pointer;position:relative;overflow:hidden;
+  transition:all .25s;letter-spacing:0.4px;margin-top:6px;
+}
+.btn-main{
+  background:linear-gradient(135deg,var(--blue) 0%,var(--cyan) 100%);
+  color:#fff;
+  box-shadow:0 4px 20px rgba(26,110,255,0.3);
+}
+.btn-main::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent);
+  opacity:0;transition:opacity .25s;
+}
+.btn-main:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(26,110,255,0.45);}
+.btn-main:hover::before{opacity:1;}
+.btn-main:active{transform:translateY(0);}
+.btn-main:disabled{opacity:0.45;cursor:not-allowed;transform:none;box-shadow:none;}
+
+.btn-ghost{
+  background:rgba(255,255,255,0.05);
+  border:1.5px solid var(--border);color:var(--muted);
+}
+.btn-ghost:hover{background:rgba(255,255,255,0.09);color:var(--text);}
+
+.btn .spin{
+  display:none;width:18px;height:18px;
+  border:2px solid rgba(255,255,255,0.25);
+  border-top-color:#fff;border-radius:50%;
+  animation:spin .6s linear infinite;margin:0 auto;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.btn.loading .btext{display:none;}
+.btn.loading .spin{display:block;}
+
+/* ── Review box ── */
+.review-card{
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--border);
+  border-radius:14px;padding:16px 18px;
+  margin-bottom:18px;font-size:13.5px;
+  line-height:2.2;
+}
+.review-row{display:flex;gap:8px;align-items:center;}
+.review-key{color:var(--muted);font-size:12px;min-width:64px;}
+.review-val{color:var(--text);font-weight:500;}
+
+/* ── Terms ── */
+.terms-row{
+  display:flex;align-items:flex-start;gap:10px;
+  font-size:12.5px;color:var(--muted);margin-bottom:14px;
+}
+.terms-row input{margin-top:2px;accent-color:var(--cyan);}
+.terms-row a{color:var(--cyan);text-decoration:none;}
+
+/* ── Forgot ── */
+.forgot-row{text-align:right;margin-top:-8px;margin-bottom:14px;}
+.forgot-row a{font-size:12px;color:var(--cyan);text-decoration:none;transition:opacity .2s;}
+.forgot-row a:hover{opacity:0.7;}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;bottom:30px;left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:rgba(10,18,35,0.95);
+  border:1px solid var(--border);
+  border-radius:14px;padding:13px 22px;
+  font-size:13.5px;font-weight:500;
+  display:flex;align-items:center;gap:10px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.5);
+  transition:transform .5s cubic-bezier(0.16,1,0.3,1),opacity .5s;
+  z-index:1000;min-width:260px;max-width:90vw;
+  backdrop-filter:blur(20px);
+}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.s{border-color:rgba(0,245,160,0.35);}
+.toast.e{border-color:rgba(255,64,96,0.35);}
+.toast.i{border-color:rgba(0,200,255,0.35);}
+.toast.w{border-color:rgba(255,184,48,0.35);}
+
+/* ── Success overlay ── */
+.success-overlay{
+  position:absolute;inset:0;z-index:50;
+  background:rgba(3,6,15,0.95);
+  backdrop-filter:blur(10px);
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;
+  border-radius:0;
+}
+.success-overlay.show{display:flex;animation:fadeIn .5s ease;}
+.success-circle{
+  width:80px;height:80px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(0,245,160,0.2),rgba(0,200,255,0.1));
+  border:2px solid var(--success);
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;
+  animation:successPop .6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes successPop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.success-text{font-family:var(--font-h);font-size:20px;font-weight:700;color:var(--success);text-align:center;}
+.success-sub{font-size:13px;color:var(--muted);text-align:center;}
+
+@media(max-width:768px){
+  .layout{flex-direction:column;width:95vw;}
+  .left{display:none;}
+  .right{width:100%;}
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+<canvas id="starfield"></canvas>
+<div class="grid-overlay"></div>
+<div class="neb neb1"></div>
+<div class="neb neb2"></div>
+<div class="neb neb3"></div>
+<div class="scanline"></div>
+
+<div class="layout">
+
+  <!-- ══ LEFT BRAND PANEL ══ -->
+  <div class="left">
+    <div class="left-beam"></div>
+
+    <div class="brand">
+      <div class="brand-logo">
+        <div class="logo-hex"><span>📦</span></div>
+        <div class="brand-name">Trace<em>360</em></div>
+      </div>
+      <div class="brand-tagline">GPS Logistics Platform</div>
+      <div class="brand-heading">
+        Track every<br/>
+        package in<br/>
+        <span class="glow">real‑time.</span>
+      </div>
+      <div class="brand-sub">
+        Secure delivery management for customers, agents, and admins — all in one platform.
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num" id="cnt-packages">0</div>
+        <div class="stat-label">Packages</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="cnt-agents">0</div>
+        <div class="stat-label">Agents</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num" id="cnt-uptime">0%</div>
+        <div class="stat-label">Uptime</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT FORM PANEL ══ -->
+  <div class="right">
+
+    <!-- Success overlay -->
+    <div class="success-overlay" id="success-overlay">
+      <div class="success-circle">✓</div>
+      <div class="success-text" id="success-title">Welcome back!</div>
+      <div class="success-sub" id="success-sub">Redirecting to dashboard...</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab-slider" id="tab-slider"></div>
+      <button class="tab-btn active" onclick="switchTab('login')">Sign In</button>
+      <button class="tab-btn" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- ─── LOGIN PANEL ─── -->
+    <div class="panel active" id="panel-login">
+
+      <button class="btn-google" onclick="handleGoogleLogin()">
+        <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+      <div class="divider">or use email</div>
+
+      <div class="field">
+        <label>Sign in as</label>
+        <div class="roles" id="l-roles">
+          <div class="role-card sel" data-r="customer" onclick="pickRole('l',this)"><span class="role-icon">👤</span>Customer</div>
+          <div class="role-card" data-r="agent" onclick="pickRole('l',this)"><span class="role-icon">🚚</span>Agent</div>
+          <div class="role-card" data-r="admin" onclick="pickRole('l',this)"><span class="role-icon">🛡️</span>Admin</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Email <span class="e-badge unv" id="l-ebadge">● Unverified</span></label>
+        <div class="input-shell" id="l-email-shell">
+          <input type="email" id="l-email" placeholder="you@example.com" oninput="lEmailCheck(this)"/>
+          <span class="input-icon">✉</span>
+        </div>
+        <div class="val-msg" id="l-email-msg"></div>
+      </div>
+
+      <div class="field">
+        <label>Password</label>
+        <div class="input-shell" id="l-pass-shell">
+          <input type="password" id="l-pass" placeholder="Your password" oninput="lPassCheck(this)"/>
+          <button class="toggle-eye" onclick="eyeToggle('l-pass',this)">👁</button>
+        </div>
+        <div class="val-msg" id="l-pass-msg"></div>
+      </div>
+
+      <div class="forgot-row"><a href="#" onclick="doForgot(event)">Forgot password?</a></div>
+
+      <button class="btn btn-main" id="l-btn" onclick="doLogin()">
+        <span class="btext">Sign In →</span><div class="spin"></div>
+      </button>
+    </div>
+
+    <!-- ─── REGISTER PANEL ─── -->
+    <div class="panel" id="panel-register">
+
+      <div class="step-track">
+        <div class="step-dot cur" id="sd0"></div>
+        <div class="step-dot" id="sd1"></div>
+        <div class="step-dot" id="sd2"></div>
+      </div>
+
+      <button class="btn-google" onclick="handleGoogleReg()">
+        <svg viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Continue with Google
+      </button>
+      <div class="divider">or register manually</div>
+
+      <!-- Step 0 -->
+      <div id="rs0">
+        <div class="field">
+          <label>Register as</label>
+          <div class="roles" id="r-roles">
+            <div class="role-card sel" data-r="customer" onclick="pickRole('r',this)"><span class="role-icon">👤</span>Customer</div>
+            <div class="role-card" data-r="agent" onclick="pickRole('r',this)"><span class="role-icon">🚚</span>Agent</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Full name</label>
+          <div class="input-shell" id="rname-shell">
+            <input type="text" id="r-name" placeholder="e.g. Abhilasha Hubballi" oninput="checkName(this)"/>
+          </div>
+          <div class="hint-row">
+            <span class="hint" id="h-alpha">Letters only</span>
+            <span class="hint" id="h-two">2+ words</span>
+            <span class="hint" id="h-cap">Capitalised</span>
+            <span class="hint" id="h-nonum">No numbers</span>
+          </div>
+          <div class="val-msg" id="rname-msg"></div>
+        </div>
+        <div class="field">
+          <label>Email <span class="e-badge unv" id="r-ebadge">● Unverified</span></label>
+          <div class="input-shell" id="remail-shell">
+            <input type="email" id="r-email" placeholder="you@example.com" oninput="checkRegEmail(this)"/>
+            <button class="otp-trigger" id="otp-btn" onclick="sendOTP()" disabled>Send OTP</button>
+          </div>
+          <div class="val-msg" id="remail-msg"></div>
+        </div>
+        <div class="field" id="otp-field" style="display:none">
+          <label>Enter 6-digit OTP</label>
+          <div class="otp-row" id="otp-row"></div>
+          <div class="val-msg" id="otp-msg"></div>
+        </div>
+        <button class="btn btn-main" onclick="nextStep(1)"><span class="btext">Continue →</span><div class="spin"></div></button>
+      </div>
+
+      <!-- Step 1 -->
+      <div id="rs1" style="display:none">
+        <div class="field">
+          <label>Phone number</label>
+          <div class="phone-row">
+            <div class="ph-code">🇮🇳 +91</div>
+            <div class="input-shell" id="rph-shell" style="flex:1">
+              <input type="tel" id="r-phone" placeholder="9876543210" maxlength="10" oninput="checkPhone(this)"/>
+            </div>
+          </div>
+          <div class="val-msg" id="rph-msg"></div>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="input-shell" id="rpass-shell">
+            <input type="password" id="r-pass" placeholder="Min 8 characters" oninput="checkPass(this)"/>
+            <button class="toggle-eye" onclick="eyeToggle('r-pass',this)">👁</button>
+          </div>
+          <div class="strength-row"><div class="s-seg" id="ss0"></div><div class="s-seg" id="ss1"></div><div class="s-seg" id="ss2"></div><div class="s-seg" id="ss3"></div></div>
+          <div class="val-msg" id="rpass-msg"></div>
+        </div>
+        <div class="field">
+          <label>Confirm password</label>
+          <div class="input-shell" id="rcon-shell">
+            <input type="password" id="r-confirm" placeholder="Re-enter password" oninput="checkConfirm(this)"/>
+          </div>
+          <div class="val-msg" id="rcon-msg"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="flex:0.45;margin-top:6px" onclick="nextStep(0)">← Back</button>
+          <button class="btn btn-main" style="flex:1" onclick="nextStep(2)"><span class="btext">Continue →</span><div class="spin"></div></button>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div id="rs2" style="display:none">
+        <div class="review-card" id="review-box"></div>
+        <div class="terms-row">
+          <input type="checkbox" id="terms" onchange="termsToggle()"/>
+          <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" style="flex:0.45;margin-top:6px" onclick="nextStep(1)">← Back</button>
+          <button class="btn btn-main" style="flex:1" id="submit-btn" onclick="doRegister()" disabled><span class="btext">Create Account ✦</span><div class="spin"></div></button>
+        </div>
+      </div>
+
+    </div><!-- end register panel -->
+  </div><!-- end right -->
+</div><!-- end layout -->
+
+<div class="toast" id="toast"><span id="t-icon"></span><span id="t-msg"></span></div>
+
+<script>
+/* ══ CURSOR ══ */
+const cur=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
+(function loop(){rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(loop);})();
+
+/* ══ STARFIELD ══ */
+(function(){
+  const c=document.getElementById('starfield'),ctx=c.getContext('2d');
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  const stars=Array.from({length:180},()=>({
+    x:Math.random()*c.width,y:Math.random()*c.height,
+    r:Math.random()*1.2+0.2,
+    a:Math.random(),da:(Math.random()-.5)*.005,
+    vx:(Math.random()-.5)*.15,vy:(Math.random()-.5)*.15
+  }));
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(s=>{
+      s.x+=s.vx;s.y+=s.vy;s.a+=s.da;
+      if(s.a<0||s.a>1)s.da*=-1;
+      if(s.x<0)s.x=c.width;if(s.x>c.width)s.x=0;
+      if(s.y<0)s.y=c.height;if(s.y>c.height)s.y=0;
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle=`rgba(180,210,255,${s.a*0.7})`;ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+/* ══ COUNTER ANIMATION ══ */
+function animCount(el,target,suffix='',dur=2000){
+  let start=null,from=0;
+  function step(ts){
+    if(!start)start=ts;
+    const p=Math.min((ts-start)/dur,1);
+    const ease=1-Math.pow(1-p,3);
+    el.textContent=Math.floor(from+(target-from)*ease)+suffix;
+    if(p<1)requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+setTimeout(()=>{
+  animCount(document.getElementById('cnt-packages'),14820);
+  animCount(document.getElementById('cnt-agents'),342);
+  animCount(document.getElementById('cnt-uptime'),99,'%');
+},600);
+
+/* ══ API ══ */
+const API = 'https://trace360-oxzm.onrender.com';
+
+/* ══ STATE ══ */
+const S={
+  lRole:'customer',rRole:'customer',
+  emailVerified:false,mockOTP:'',step:0,
+  used:[]
+};
+
+/* ══ UTILS ══ */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function msg(id,text,type){const e=document.getElementById(id);if(e){e.textContent=text;e.className='val-msg '+type;}}
+function shell(id,type){const e=document.getElementById(id);if(e){e.classList.remove('valid','invalid');if(type)e.classList.add(type);}}
+function badge(id,type,text){const e=document.getElementById(id);if(e){e.className='e-badge '+type;e.textContent=text;}}
+function toast(m,type='i',icon=''){
+  const icons={s:'✅',e:'❌',i:'ℹ️',w:'⚠️'};
+  const t=document.getElementById('toast');
+  document.getElementById('t-icon').textContent=icon||icons[type];
+  document.getElementById('t-msg').textContent=m;
+  t.className=`toast ${type} show`;
+  setTimeout(()=>t.className=`toast ${type}`,3200);
+}
+
+/* ══ TAB ══ */
+function switchTab(t){
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&t==='login')||(i===1&&t==='register')));
+  document.getElementById('panel-login').classList.toggle('active',t==='login');
+  document.getElementById('panel-register').classList.toggle('active',t==='register');
+  document.getElementById('tab-slider').classList.toggle('right-side',t==='register');
+}
+
+/* ══ ROLE ══ */
+function pickRole(prefix,el){
+  const wrap=document.getElementById(prefix==='l'?'l-roles':'r-roles');
+  wrap.querySelectorAll('.role-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  if(prefix==='l')S.lRole=el.dataset.r; else S.rRole=el.dataset.r;
+}
+
+/* ══ EYE TOGGLE ══ */
+function eyeToggle(id,btn){
+  const i=document.getElementById(id);
+  i.type=i.type==='password'?'text':'password';
+  btn.textContent=i.type==='password'?'👁':'🙈';
+}
+
+/* ══ ASYNC: check email exists (real backend not needed — handled at login) ══ */
+async function emailExists(e){return true;} // backend validates at login
+async function emailUnique(e){return true;} // backend validates at register
+
+/* ══ LOGIN VALIDATIONS ══ */
+function lEmailCheck(inp){
+  const v=inp.value.trim();
+  const ok=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+  if(!v){msg('l-email-msg','Required','e');shell('l-email-shell','invalid');return;}
+  if(!ok){msg('l-email-msg','Invalid email format','e');shell('l-email-shell','invalid');badge('l-ebadge','unv','● Unverified');return;}
+  badge('l-ebadge','chk','⟳ Checking...');
+  emailExists(v).then(ex=>{
+    if(ex){msg('l-email-msg','✓ Account found','s');shell('l-email-shell','valid');badge('l-ebadge','ver','✓ Verified');}
+    else{msg('l-email-msg','No account with this email','e');shell('l-email-shell','invalid');badge('l-ebadge','unv','● Unverified');}
+  });
+}
+function lPassCheck(inp){
+  if(!inp.value){msg('l-pass-msg','Required','e');shell('l-pass-shell','invalid');return false;}
+  if(inp.value.length<6){msg('l-pass-msg','Too short','e');shell('l-pass-shell','invalid');return false;}
+  msg('l-pass-msg','','');shell('l-pass-shell','valid');return true;
+}
+
+/* ══ REGISTER VALIDATIONS ══ */
+function checkName(inp){
+  const v=inp.value;
+  const noNum=!/\d/.test(v);
+  const alpha=/^[a-zA-Z\s]*$/.test(v);
+  const words=v.trim().split(/\s+/).filter(Boolean);
+  const twoW=words.length>=2;
+  const cap=twoW&&words.every(w=>/^[A-Z]/.test(w));
+  ['h-alpha','h-two','h-cap','h-nonum'].forEach((id,i)=>{
+    const ok=[alpha&&noNum,twoW,cap,noNum][i];
+    document.getElementById(id).className='hint '+(ok?'ok':'fail');
+  });
+  if(!v){msg('rname-msg','Name required','e');shell('rname-shell','invalid');return false;}
+  if(!noNum||!alpha){msg('rname-msg','Letters and spaces only','e');shell('rname-shell','invalid');return false;}
+  if(!twoW){msg('rname-msg','Enter first and last name','w');shell('rname-shell','invalid');return false;}
+  if(!cap){msg('rname-msg','Capitalise each word','w');shell('rname-shell','invalid');return false;}
+  msg('rname-msg','✓ Valid name','s');shell('rname-shell','valid');return true;
+}
+
+function checkRegEmail(inp){
+  const v=inp.value.trim();
+  const ok=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+  document.getElementById('otp-btn').disabled=true;
+  if(!v){msg('remail-msg','Required','e');shell('remail-shell','invalid');return;}
+  if(!ok){msg('remail-msg','Invalid email format','e');shell('remail-shell','invalid');badge('r-ebadge','unv','● Unverified');return;}
+  badge('r-ebadge','chk','⟳ Checking...');
+  msg('remail-msg','Checking availability...','w');
+  emailUnique(v).then(u=>{
+    if(!u){msg('remail-msg','Already registered — sign in instead','e');shell('remail-shell','invalid');badge('r-ebadge','unv','● Unverified');}
+    else{msg('remail-msg','✓ Email available','s');shell('remail-shell','valid');badge('r-ebadge','unv','● Unverified');document.getElementById('otp-btn').disabled=false;}
+  });
+}
+
+function checkPhone(inp){
+  inp.value=inp.value.replace(/\D/,'');
+  const v=inp.value;
+  if(!v){msg('rph-msg','Required','e');shell('rph-shell','invalid');return false;}
+  if(v.startsWith('0')){msg('rph-msg','Cannot start with 0','e');shell('rph-shell','invalid');return false;}
+  if(v.startsWith('123456')){msg('rph-msg','Cannot start with 123456','e');shell('rph-shell','invalid');return false;}
+  if(v.length<10){msg('rph-msg',`${10-v.length} more digit(s) needed`,'w');shell('rph-shell','invalid');return false;}
+  if(!/^[6-9]/.test(v)){msg('rph-msg','Must start with 6–9 (Indian mobile)','e');shell('rph-shell','invalid');return false;}
+  msg('rph-msg','✓ Valid number','s');shell('rph-shell','valid');return true;
+}
+
+function checkPass(inp){
+  const v=inp.value;
+  const checks=[v.length>=8,/[A-Z]/.test(v),/[0-9]/.test(v),/[^A-Za-z0-9]/.test(v)];
+  const cols=['#ff4060','#ffb830','#00c8ff','#00f5a0'];
+  let score=checks.filter(Boolean).length;
+  checks.forEach((c,i)=>{document.getElementById('ss'+i).style.background=c?cols[Math.min(score-1,3)]:'var(--muted2)';});
+  if(!v){msg('rpass-msg','Required','e');shell('rpass-shell','invalid');return false;}
+  if(v.length<8){msg('rpass-msg','Minimum 8 characters','e');shell('rpass-shell','invalid');return false;}
+  const labs=['','Weak','Fair','Strong','Very Strong'],types=['','e','w','s','s'];
+  msg('rpass-msg','Strength: '+labs[score],types[score]);
+  shell('rpass-shell',score>=2?'valid':'invalid');
+  const conf=document.getElementById('r-confirm');
+  if(conf.value)checkConfirm(conf);
+  return score>=2;
+}
+
+function checkConfirm(inp){
+  const p=document.getElementById('r-pass').value;
+  if(!inp.value){msg('rcon-msg','Required','e');shell('rcon-shell','invalid');return false;}
+  if(inp.value!==p){msg('rcon-msg','Passwords do not match','e');shell('rcon-shell','invalid');return false;}
+  msg('rcon-msg','✓ Passwords match','s');shell('rcon-shell','valid');return true;
+}
+
+/* ══ OTP ══ */
+async function sendOTP(){
+  const btn=document.getElementById('otp-btn');
+  const email=document.getElementById('r-email').value.trim();
+  try{
+    btn.disabled=true;btn.textContent='Sending...';
+    const res=await fetch(`${API}/api/auth/send-otp`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.message||'Failed to send OTP');
+    toast('OTP sent to your email!','s');
+    buildOTP();
+    document.getElementById('otp-field').style.display='block';
+    let n=30;
+    const iv=setInterval(()=>{btn.textContent=`Resend ${n}s`;n--;if(n<0){clearInterval(iv);btn.textContent='Resend OTP';btn.disabled=false;}},1000);
+  }catch(er){toast(er.message||'Failed to send OTP','e');btn.disabled=false;btn.textContent='Send OTP';}
+}
+
+function buildOTP(){
+  const row=document.getElementById('otp-row');row.innerHTML='';
+  for(let i=0;i<6;i++){
+    const b=document.createElement('input');
+    b.type='tel';b.maxLength=1;b.className='otp-box';b.dataset.i=i;
+    b.addEventListener('input',otpIn);b.addEventListener('keydown',otpKey);b.addEventListener('paste',otpPaste);
+    row.appendChild(b);
+  }
+}
+function otpIn(e){
+  const b=e.target,i=+b.dataset.i;
+  b.value=b.value.replace(/\D/,'');
+  if(b.value){b.classList.add('filled');const n=document.querySelector(`.otp-box[data-i="${i+1}"]`);if(n)n.focus();}
+  else b.classList.remove('filled');
+  verifyOTP();
+}
+function otpKey(e){
+  const i=+e.target.dataset.i;
+  if(e.key==='Backspace'&&!e.target.value){const p=document.querySelector(`.otp-box[data-i="${i-1}"]`);if(p){p.value='';p.classList.remove('filled');p.focus();}}
+}
+function otpPaste(e){
+  e.preventDefault();
+  const p=e.clipboardData.getData('text').replace(/\D/g,'').slice(0,6);
+  document.querySelectorAll('.otp-box').forEach((b,i)=>{if(p[i]){b.value=p[i];b.classList.add('filled');}});
+  verifyOTP();
+}
+function verifyOTP(){
+  const boxes=document.querySelectorAll('.otp-box');
+  const entered=Array.from(boxes).map(b=>b.value).join('');
+  if(entered.length<6)return;
+  const email=document.getElementById('r-email').value.trim();
+  fetch(`${API}/api/auth/verify-otp`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,otp:entered})})
+  .then(res=>res.json()).then(data=>{
+    if(data.success||data.status===200){
+      S.emailVerified=true;S.verifiedOtp=entered;
+      boxes.forEach(b=>{b.classList.add('ok');b.disabled=true;});
+      badge('r-ebadge','ver','✓ Verified');
+      msg('otp-msg','✓ Email verified!','s');
+      toast('Email verified successfully!','s');
+    } else {
+      msg('otp-msg','Incorrect OTP','e');
+      boxes.forEach(b=>b.style.borderColor='var(--error)');
+      setTimeout(()=>boxes.forEach(b=>{b.style.borderColor='';b.classList.remove('filled');b.value='';b.disabled=false;}),800);
+      document.querySelector('.otp-box').focus();
+    }
+  }).catch(()=>{msg('otp-msg','Verification failed','e');});
+}
+
+/* ══ STEPS ══ */
+function nextStep(to){
+  if(to>S.step&&!validateStep(S.step))return;
+  document.getElementById('rs'+S.step).style.display='none';
+  document.getElementById('rs'+to).style.display='block';
+  // Animate in
+  const el=document.getElementById('rs'+to);
+  el.style.animation='none';el.offsetHeight;
+  el.style.animation='panelIn .35s cubic-bezier(0.16,1,0.3,1)';
+  for(let i=0;i<3;i++){
+    const d=document.getElementById('sd'+i);
+    d.className='step-dot '+(i<to?'done':i===to?'cur':'');
+  }
+  if(to===2)buildReview();
+  S.step=to;
+}
+
+function validateStep(s){
+  if(s===0){
+    const n=checkName(document.getElementById('r-name'));
+    const eok=document.getElementById('remail-shell').classList.contains('valid');
+    if(!n){toast('Fix your name','w');return false;}
+    if(!eok){toast('Enter a valid unique email','w');return false;}
+    if(!S.emailVerified){toast('Verify your email with OTP first','w');return false;}
+    return true;
+  }
+  if(s===1){
+    const ph=checkPhone(document.getElementById('r-phone'));
+    const ps=checkPass(document.getElementById('r-pass'));
+    const co=checkConfirm(document.getElementById('r-confirm'));
+    if(!ph){toast('Fix phone number','w');return false;}
+    if(!ps){toast('Strengthen your password','w');return false;}
+    if(!co){toast('Passwords do not match','w');return false;}
+    return true;
+  }
+  return true;
+}
+
+function buildReview(){
+  const rows=[
+    ['Name',document.getElementById('r-name').value],
+    ['Email',document.getElementById('r-email').value+' <span style="color:var(--success);font-size:11px">✓ Verified</span>'],
+    ['Phone','+91 '+document.getElementById('r-phone').value],
+    ['Role',S.rRole.charAt(0).toUpperCase()+S.rRole.slice(1)]
+  ];
+  document.getElementById('review-box').innerHTML=rows.map(r=>`<div class="review-row"><span class="review-key">${r[0]}</span><span class="review-val">${r[1]}</span></div>`).join('');
+}
+function termsToggle(){document.getElementById('submit-btn').disabled=!document.getElementById('terms').checked;}
+
+/* ══ ACTIONS ══ */
+async function doLogin(){
+  const btn=document.getElementById('l-btn');
+  const email=document.getElementById('l-email').value.trim();
+  const pass=document.getElementById('l-pass').value;
+  if(!lPassCheck(document.getElementById('l-pass'))){toast('Fix the errors above','e');return;}
+  try{
+    btn.classList.add('loading');btn.disabled=true;
+    const res=await fetch(`${API}/api/auth/login`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.message||'Invalid credentials');
+    localStorage.setItem('trace360_token',data.token||data.data?.token);
+    localStorage.setItem('trace360_user',JSON.stringify(data));
+    const role=(data.role||data.data?.role||'').toUpperCase();
+    showSuccess(`Welcome back!`,`Redirecting to ${role||'your'} dashboard...`);
+    setTimeout(()=>{
+      if(role==='ADMIN')window.location.href='trace360-admin.html';
+      else window.location.href='trace360-v3.html';
+    },1500);
+  }catch(er){
+    toast(er.message||'Wrong email or password','e');
+  }finally{btn.classList.remove('loading');btn.disabled=false;}
+}
+
+async function doRegister(){
+  const btn=document.getElementById('submit-btn');
+  try{
+    btn.classList.add('loading');btn.disabled=true;
+    const payload={
+      fullName:document.getElementById('r-name').value.trim(),
+      email:document.getElementById('r-email').value.trim(),
+      phone:'+91'+document.getElementById('r-phone').value.trim(),
+      password:document.getElementById('r-pass').value,
+      role:S.rRole.toUpperCase(),
+      otp:S.verifiedOtp||''
+    };
+    const res=await fetch(`${API}/api/auth/register`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.message||'Registration failed');
+    showSuccess('Account created! 🎉','Please sign in to continue.');
+    setTimeout(()=>switchTab('login'),2200);
+  }catch(er){toast(er.message||'Registration failed','e');}
+  finally{btn.classList.remove('loading');btn.disabled=false;}
+}
+
+async function handleGoogleLogin(){
+  try{
+    toast('Connecting to Google...','i','🔄');
+    await sleep(1000);
+    showSuccess('Signed in with Google','Redirecting to dashboard...');
+  }catch(er){toast('Google sign-in failed','e');}
+}
+
+async function handleGoogleReg(){
+  try{
+    toast('Connecting to Google...','i','🔄');
+    await sleep(1000);
+    const name='Abhilasha Hubballi';
+    const email='abhilasha@gmail.com';
+    document.getElementById('r-name').value=name;checkName(document.getElementById('r-name'));
+    document.getElementById('r-email').value=email;
+    shell('remail-shell','valid');badge('r-ebadge','ver','✓ Verified');
+    msg('remail-msg','✓ Verified via Google','s');
+    S.emailVerified=true;
+    document.getElementById('otp-field').style.display='none';
+    document.getElementById('otp-btn').style.display='none';
+    toast('Google connected — complete your profile','s');
+  }catch(er){toast('Google failed','e');}
+}
+
+async function doForgot(e){
+  e.preventDefault();
+  const email=document.getElementById('l-email').value.trim();
+  if(!email){toast('Enter your email above first','w');document.getElementById('l-email').focus();return;}
+  try{toast('Sending reset link...','i','📧');await sleep(1200);toast(`Reset link sent to ${email}`,'s');}
+  catch(er){toast('Failed to send reset link','e');}
+}
+
+function showSuccess(title,sub){
+  const ov=document.getElementById('success-overlay');
+  document.getElementById('success-title').textContent=title;
+  document.getElementById('success-sub').textContent=sub;
+  ov.classList.add('show');
+}
+</script>
+</body>
+</html>

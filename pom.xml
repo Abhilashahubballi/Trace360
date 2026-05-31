@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Root Parent POM for Trace360
+  Allows Maven tooling (GitHub Actions, IDE) to resolve the project
+  from the repository root.
+  The actual Spring Boot build lives in /backend/pom.xml.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.trace360</groupId>
+    <artifactId>trace360-parent</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>Trace360 Parent</name>
+    <description>GPS Package Delivery Tracking System — Parent POM</description>
+    <url>https://github.com/your-username/trace360</url>
+
+    <modules>
+        <module>backend</module>
+    </modules>
+
+</project>
